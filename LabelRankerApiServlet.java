@@ -97,7 +97,7 @@ import java.util.HashMap;
 @WebServlet("/labelranker")
 public class LabelRankerApiServlet extends HttpServlet{
 	private static final long serialVersionUID = 1L;
-	private String APIKey = "xxxxxxxxxxxxxxxxxxxx";
+	private String APIKey = "xxxxxxx";
 	
 	protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, FileNotFoundException, IOException{
 		String payloadRequest = getPayload(request);
@@ -107,12 +107,13 @@ public class LabelRankerApiServlet extends HttpServlet{
 		try {
 			reqJSON = (JSONObject) parser.parse(payloadRequest);
 		} catch (ParseException e1) {
-			// TODO Auto-generated catch block
 			e1.printStackTrace();
 		}		
 		List<String> imgURLForPost = populateImgUriList(reqJSON);
 		List<String> words = populateWordList(reqJSON);
-				
+		long longKey = (Long)reqJSON.get("key");
+		int key = new Long(longKey).intValue();
+		
 		CloseableHttpClient client = HttpClients.createDefault();
 		HttpPost httpPost = new HttpPost("https://vision.googleapis.com/v1/images:annotate?key=" + APIKey);
 		httpPost.setHeader("ACCEPT", "application/json");
@@ -136,14 +137,14 @@ public class LabelRankerApiServlet extends HttpServlet{
 		
 		LabelRanker ranker = new LabelRanker();
 		List<LabelRelevance> labelRelevanceList = ranker.rank(labelJsonMap, words);
-		JSONObject returnPayload = constructReturnPayload(labelRelevanceList, words);		
+		JSONObject returnPayload = constructReturnPayload(labelRelevanceList, words, key);		
 		
 		response.setContentType("application/json");
 		response.getWriter().println(returnPayload.toString());
 	}
 	
 	@SuppressWarnings("unchecked")
-	private JSONObject constructReturnPayload(List<LabelRelevance> labelList, List<String> wordsList){
+	private JSONObject constructReturnPayload(List<LabelRelevance> labelList, List<String> wordsList, int key){
 		JSONObject returnPayload = new JSONObject();
 
 		JSONArray img_urlArr = new JSONArray();
@@ -174,6 +175,7 @@ public class LabelRankerApiServlet extends HttpServlet{
 		
 		returnPayload.put("img_url", img_urlArr);
 		returnPayload.put("word_list", wordsArr);	
+		returnPayload.put("key", key);
 				
 		return returnPayload;
 	}
