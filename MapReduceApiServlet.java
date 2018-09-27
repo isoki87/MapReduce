@@ -135,15 +135,18 @@ public class MapReduceApiServlet extends HttpServlet{
 		int key = 0;
 		//Carries will determine how many of the servlets will have 1 more uri than the rest
 		int uriCount = imgURLForPost.size();
-		int carries = uriCount % max;
+		int carries = uriCount % (max + 1);
 		int mapperSize = uriCount / (max + 1);
-		ExecutorService threadPool = Executors.newFixedThreadPool(max + 1);
 		ImgData[] imgArr = new ImgData[uriCount];
+		JSONObject mapperPayload = new JSONObject();
+		String mapperReturnPayload = null;
 		
+		//Executor for multi-threaded call to each api
+		ExecutorService threadPool = Executors.newFixedThreadPool(max + 1);
 		
 		while(key <= max){
 			//Wrap each smaller sized bits into JSON to send out
-			JSONObject mapperPayload = constructMapperPayload(imgURLForPost, words, key, carries);
+			mapperPayload = constructMapperPayload(imgURLForPost, words, key, carries);
 			String mapperAddress = null;
 			
 			switch(key){
@@ -165,7 +168,7 @@ public class MapReduceApiServlet extends HttpServlet{
 			httpPost.setEntity(ent);
 			HttpResponse resp = client.execute(httpPost);
 			HttpEntity entity = resp.getEntity();
-			String mapperReturnPayload = EntityUtils.toString(entity, "UTF-8");
+			mapperReturnPayload = EntityUtils.toString(entity, "UTF-8");
 			
 			//From the response, unpackage each item into an ImgData object
 			//Put the ImgData object in order, with the starting spot derived from key/carries/max
@@ -206,7 +209,8 @@ public class MapReduceApiServlet extends HttpServlet{
 			e1.printStackTrace();
 		}		
 		
-		int key = Integer.parseInt((String)obj.get("key"));
+		long longKey = (Long)obj.get("key");
+		int key = new Long(longKey).intValue();
 		int start = 0;
 		int len = 0;
 		
@@ -244,7 +248,8 @@ public class MapReduceApiServlet extends HttpServlet{
 	}
 	
 	private int getRelevance(JSONObject obj){
-		return Integer.parseInt((String)obj.get("relevance"));
+		long relevance = (Long)obj.get("relevance");
+		return new Long(relevance).intValue();
 	}
 	
 	@SuppressWarnings("unchecked")
