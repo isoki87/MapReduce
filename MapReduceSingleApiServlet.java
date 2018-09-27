@@ -9,9 +9,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
@@ -141,9 +138,6 @@ public class MapReduceApiServlet extends HttpServlet{
 		JSONObject mapperPayload = new JSONObject();
 		String mapperReturnPayload = null;
 		
-		//Executor for multi-threaded call to each api
-		ExecutorService threadPool = Executors.newFixedThreadPool(max + 1);
-		
 		while(key <= max){
 			//Wrap each smaller sized bits into JSON to send out
 			mapperPayload = constructMapperPayload(imgURLForPost, words, key, carries);
@@ -175,23 +169,13 @@ public class MapReduceApiServlet extends HttpServlet{
 			populateMasterArr(imgArr, mapperReturnPayload, carries, mapperSize);			
 			key++;
 		}				
-		
-		threadPool.shutdown();
-		try {
-			if(!threadPool.awaitTermination(1000, TimeUnit.MILLISECONDS)){
-				threadPool.shutdownNow();
-			}
-		} catch(InterruptedException e){
-			threadPool.shutdownNow();
-		}
-		
+
 		//Sort the ImgData[] with a comparator for relevance
 		Arrays.sort(imgArr, new Comparator<ImgData>(){
 			public int compare(ImgData a, ImgData b){
 				return (a.relevance == b.relevance) ? 0 : ((a.relevance < b.relevance) ? 1 : -1);		
 			}				
-		});		
-		
+		});	
 
 		//Turn the ImgData[] into a JSON to be sent back to the front-end
 		JSONObject frontEndReturnPayload = constructFrontEndReturnPayload(imgArr, words);
